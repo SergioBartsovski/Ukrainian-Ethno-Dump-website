@@ -1,0 +1,55 @@
+# ==============================
+# ❌ Игнорировать старые HTML-файлы
+# ==============================
+Addstock-status.html
+AnimationCar.html
+AnimCart2.html
+Carousel.html
+cart.html
+Cart2.html
+CorrectedSizes.html
+EnlargedPreview.html
+ExampsPage.html
+ExperimentalPage.html
+FinalizationPage.html
+first.html
+IdenticalRow.html
+IfDisabled.html
+ImprovedCRM.html
+MoreSmooth.html
+New.html
+OpenCart.html
+Page&Cart.html
+Page2ProductVideoKoffeeBg copy.html
+page3.html
+PaginationCard.html
+PlaginationCarg.html
+Presentatin2_as_Dressa.html
+products.html
+SalePromotionNavbar.html
+Search.html
+SmoothCard.html
+
+# ==============================
+# ⚙️ Игнорировать папки редактора VS Code
+# ==============================
+.vscode/
+
+# ==============================
+# ⚙️ Игнорировать временные и системные файлы
+# ==============================
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
+*.tmp
+
+# ==============================
+# ⚙️ Игнорировать архивы и документы
+# ==============================
+*.zip
+*.rar
+*.7z
+*.doc
+*.docx
+*.pdf

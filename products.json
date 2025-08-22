@@ -1,0 +1,26 @@
+[
+  {
+    "title": "Вишивка",
+    "description": "Вишиванка з широкими рукавами та традиційною українською вишивкою.",
+    "image": "https://i.postimg.cc/QdznG1tC/image.jpg",
+    "price": "2000",
+    "inStock": true,
+    "link": "#"
+  },
+  {
+    "title": "В'язаний джемпер",
+    "description": "М'який і теплий в'язаний жіночий джемпер для холодної погоди.",
+    "image": "Blouse.jpg",
+    "price": "1800",
+    "inStock": false,
+    "link": "#"
+  },
+  {
+    "title": "ВишивкаЕтно",
+    "description": "Розкішна жіноча сорочка з етнічним орнаментом та вишуканим кроєм.",
+    "image": "../GoodsPhotoes/EmbroideryEthno.jpg",
+    "price": "2500",
+    "inStock": true,
+    "link": "#"
+  }
+]
