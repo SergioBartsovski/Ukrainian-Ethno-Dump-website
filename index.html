@@ -933,18 +933,18 @@
       // Run the function when the page loads
       window.addEventListener("DOMContentLoaded", applyInitialStyles);
 
-      // --- New Fix for Mobile Menu Render Bug ---
-      // This will force a reflow when the menu is opened, fixing the visual glitch
+      // New fix: Hide hero content when mobile menu is open
       document.addEventListener("DOMContentLoaded", function () {
         const navbarCollapse = document.querySelector(".navbar-collapse");
-        const heroSection = document.querySelector(".hero-section");
+        const heroContent = document.querySelector(".hero-content");
 
-        if (navbarCollapse && heroSection) {
-          // Listen for the 'show' event from Bootstrap's collapse component
+        if (navbarCollapse && heroContent) {
           navbarCollapse.addEventListener("show.bs.collapse", function () {
-            // Force the browser to recalculate the layout (reflow)
-            // Accessing offsetHeight is a common hack for this
-            heroSection.offsetHeight;
+            heroContent.style.display = "none";
+          });
+
+          navbarCollapse.addEventListener("hide.bs.collapse", function () {
+            heroContent.style.display = "flex";
           });
         }
       });
