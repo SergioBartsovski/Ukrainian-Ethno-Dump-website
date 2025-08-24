@@ -901,6 +901,37 @@
           window.scrollTo(0, window.scrollY - 1);
         }, 500);
       });
+
+      // --- New Fix for Initial Render Issue ---
+      // This part ensures that the hero section content is correctly placed before animation
+      function applyInitialStyles() {
+        const isMobileDevice = window.matchMedia("(max-width: 768px)").matches;
+        const heroTitle = document.querySelector(".hero-title");
+        const heroSubtitle = document.querySelector(".hero-subtitle");
+        const heroDescription = document.querySelector(".hero-description");
+        const ctaButtons = document.querySelector(".cta-buttons");
+
+        if (isMobileDevice) {
+          heroTitle.style.opacity = "1";
+          heroTitle.style.transform = "translateY(0)";
+          heroTitle.style.animation = "none";
+
+          heroSubtitle.style.opacity = "1";
+          heroSubtitle.style.transform = "translateY(0)";
+          heroSubtitle.style.animation = "none";
+
+          heroDescription.style.opacity = "1";
+          heroDescription.style.transform = "translateY(0)";
+          heroDescription.style.animation = "none";
+
+          ctaButtons.style.opacity = "1";
+          ctaButtons.style.transform = "translateY(0)";
+          ctaButtons.style.animation = "none";
+        }
+      }
+
+      // Run the function when the page loads
+      window.addEventListener("DOMContentLoaded", applyInitialStyles);
     </script>
   </body>
 </html>
