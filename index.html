@@ -16,7 +16,7 @@
       crossorigin="anonymous"
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+      src="https://cdn.jsdelivr.com/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
       integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
       crossorigin="anonymous"
     ></script>
@@ -318,7 +318,7 @@
         position: fixed;
         top: 0;
         width: 100%;
-        z-index: 1000;
+        z-index: 1031; /* Increased z-index */
         transition: all 0.3s ease;
         padding: 10px 0;
       }
@@ -423,13 +423,11 @@
 
       /* Mobile Responsive */
       @media (max-width: 768px) {
-        /* New fix to force correct rendering on mobile */
         .hero-section {
-          padding-top: 150px;
+          padding-top: 150px; /* Increased padding */
           min-height: auto;
         }
 
-        /* Исправление для мобильных устройств */
         .hero-title {
           margin-bottom: 0.5rem;
         }
@@ -903,48 +901,20 @@
         }, 500);
       });
 
-      // This part ensures that the hero section content is correctly placed before animation
-      function applyInitialStyles() {
-        const isMobileDevice = window.matchMedia("(max-width: 768px)").matches;
-        const heroTitle = document.querySelector(".hero-title");
-        const heroSubtitle = document.querySelector(".hero-subtitle");
-        const heroDescription = document.querySelector(".hero-description");
-        const ctaButtons = document.querySelector(".cta-buttons");
-
-        if (isMobileDevice) {
-          heroTitle.style.opacity = "1";
-          heroTitle.style.transform = "translateY(0)";
-          heroTitle.style.animation = "none";
-
-          heroSubtitle.style.opacity = "1";
-          heroSubtitle.style.transform = "translateY(0)";
-          heroSubtitle.style.animation = "none";
-
-          heroDescription.style.opacity = "1";
-          heroDescription.style.transform = "translateY(0)";
-          heroDescription.style.animation = "none";
-
-          ctaButtons.style.opacity = "1";
-          ctaButtons.style.transform = "translateY(0)";
-          ctaButtons.style.animation = "none";
-        }
-      }
-
-      // Run the function when the page loads
-      window.addEventListener("DOMContentLoaded", applyInitialStyles);
-
-      // New fix: Hide hero content when mobile menu is open
+      // Corrected fix: Hide/Show hero content
       document.addEventListener("DOMContentLoaded", function () {
-        const navbarCollapse = document.querySelector(".navbar-collapse");
+        const navbarCollapse = document.getElementById("navbarNav");
         const heroContent = document.querySelector(".hero-content");
 
         if (navbarCollapse && heroContent) {
           navbarCollapse.addEventListener("show.bs.collapse", function () {
-            heroContent.style.display = "none";
+            heroContent.style.opacity = "0";
+            heroContent.style.visibility = "hidden";
           });
 
           navbarCollapse.addEventListener("hide.bs.collapse", function () {
-            heroContent.style.display = "flex";
+            heroContent.style.opacity = "1";
+            heroContent.style.visibility = "visible";
           });
         }
       });
