@@ -63,6 +63,7 @@
         text-align: center;
         color: white;
         padding: 80px 20px 20px;
+        transform: translateZ(0); /* Final rendering fix */
       }
 
       .hero-content {
@@ -338,13 +339,6 @@
         padding: 8px 12px !important;
       }
 
-      /* New CSS for rendering fix */
-      .navbar-collapse.collapsing,
-      .navbar-collapse.show {
-        transform: translateZ(0);
-        -webkit-transform: translateZ(0);
-      }
-
       /* Button Matching Original Style */
       .BuyClick {
         background-color: coral;
@@ -433,6 +427,7 @@
         .hero-section {
           padding-top: 150px;
           min-height: auto;
+          transform: translateZ(0); /* Final rendering fix for mobile */
         }
 
         .hero-title {
