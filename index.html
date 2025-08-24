@@ -423,9 +423,10 @@
 
       /* Mobile Responsive */
       @media (max-width: 768px) {
+        /* New fix to force correct rendering on mobile */
         .hero-section {
-          padding: 90px 15px 30px;
-          min-height: 90vh;
+          padding-top: 150px;
+          min-height: auto;
         }
 
         /* Исправление для мобильных устройств */
@@ -902,7 +903,6 @@
         }, 500);
       });
 
-      // --- New Fix for Initial Render Issue ---
       // This part ensures that the hero section content is correctly placed before animation
       function applyInitialStyles() {
         const isMobileDevice = window.matchMedia("(max-width: 768px)").matches;
