@@ -1753,17 +1753,17 @@
           });
       }
 
-      // Close mobile menu when clicking on a link
-      document.querySelectorAll(".navbar-nav .nav-link").forEach((navLink) => {
-        navLink.addEventListener("click", () => {
-          const navbarToggler = document.querySelector(".navbar-toggler");
-          const navbarCollapse = document.querySelector(".navbar-collapse");
+// Close mobile menu when clicking on a link
+document.querySelectorAll(".navbar-nav .nav-link").forEach((navLink) => {
+  navLink.addEventListener("click", () => {
+    const navbarCollapse = document.querySelector("#navbarNav"); // Используем ID
+    const bsCollapse = bootstrap.Collapse.getInstance(navbarCollapse);
 
-          if (navbarCollapse && navbarCollapse.classList.contains("show")) {
-            navbarToggler.click();
-          }
-        });
-      });
+    if (bsCollapse) {
+      bsCollapse.hide();
+    }
+  });
+});
 
       // Optimize animations for mobile
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
