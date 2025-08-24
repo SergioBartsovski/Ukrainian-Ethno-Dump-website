@@ -430,11 +430,11 @@
 
         /* Исправление для мобильных устройств */
         .hero-title {
-          margin-bottom: 0.5rem; /* Уменьшаем отступ, чтобы не было наложения */
+          margin-bottom: 0.5rem;
         }
 
         .hero-subtitle {
-          margin-bottom: 1rem; /* Уменьшаем отступ, чтобы не было наложения */
+          margin-bottom: 1rem;
         }
 
         .hero-description {
@@ -464,6 +464,17 @@
         .container {
           padding-left: 15px;
           padding-right: 15px;
+        }
+      }
+
+      /* Fix for very tall screens like TECNO Pova 3 */
+      @media (max-width: 768px) and (min-aspect-ratio: 2/3) {
+        .hero-title {
+          margin-bottom: 0.8rem;
+        }
+
+        .hero-subtitle {
+          margin-bottom: 1.5rem;
         }
       }
 
