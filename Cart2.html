@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Кошик</title>
+  </head>
+  <body>
+    <h1>Оформлення замовлення</h1>
+    <form id="orderForm">
+      <label>Імʼя: <input type="text" name="name" required /></label><br />
+      <label>Email: <input type="email" name="email" required /></label><br />
+      <label>Телефон: <input type="tel" name="phone" required /></label><br />
+      <label>Адреса: <input type="text" name="address" required /></label><br />
+      <label>
+        Доставка:
+        <select name="delivery">
+          <option value="Нова Пошта">Нова Пошта</option>
+          <option value="Укрпошта">Укрпошта</option>
+        </select> </label
+      ><br />
+      <label>
+        Оплата:
+        <select name="payment">
+          <option value="Післяплата">Післяплата</option>
+          <option value="Онлайн">Онлайн</option>
+        </select> </label
+      ><br />
+      <button type="submit">Замовити</button>
+    </form>
+
+    <script>
+      const SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbzr6GpT9VuUrxeNcafXK9B78s5Ob8VTuhvUaLfRSiqkdFj_x7mAcKF_Z7sLhrC11F6k/exec";
+
+      const productTitle = localStorage.getItem("product_title") || "Вишиванка";
+
+      document
+        .getElementById("orderForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const form = e.target;
+
+          const clientData = {
+            name: form.name.value.trim(),
+            email: form.email.value.trim(),
+            phone: form.phone.value.trim(),
+            address: form.address.value.trim(),
+            delivery: form.delivery.value,
+            payment: form.payment.value,
+            title: productTitle,
+          };
+
+          try {
+            const res = await fetch(SCRIPT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(clientData),
+            });
+
+            // Apps Script почти всегда отдаёт 200, поэтому читаем JSON-объект.
+            const text = await res.text();
+            let data;
+            try {
+              data = JSON.parse(text);
+            } catch {
+              data = { ok: false, error: "NON_JSON_RESPONSE", raw: text };
+            }
+
+            if (!data.ok) {
+              throw new Error(data.error || data.raw || "UNKNOWN_ERROR");
+            }
+
+            alert("Замовлення успішно надіслано!");
+          } catch (err) {
+            alert("Помилка надсилання замовлення!");
+            console.error("Помилка:", err);
+          }
+        });
+    </script>
+  </body>
+</html>
