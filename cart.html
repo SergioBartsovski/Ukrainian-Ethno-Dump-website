@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Кошик</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        overflow-y: auto;
+      }
+
+      #background-video {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+      }
+
+      .container-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 20px;
+        margin-top: 50px;
+        padding: 20px;
+      }
+
+      .cart-container {
+        flex: 2;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .auth-container {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      @keyframes bounce {
+        0% {
+          transform: translateY(0);
+        }
+        30% {
+          transform: translateY(-10px);
+        }
+        60% {
+          transform: translateY(0);
+        }
+        100% {
+          transform: translateY(0);
+        }
+      }
+
+      .bounce {
+        animation: bounce 0.5s;
+      }
+    </style>
+  </head>
+
+  <body>
+    <video id="background-video" autoplay loop muted>
+      <source src="CoffeeVideo.mp4" type="video/mp4" />
+      Ваш браузер не підтримує відео.
+    </video>
+
+    <div class="container-wrapper">
+      <div class="cart-container">
+        <h2 class="text-center">Кошик покупок</h2>
+        <div id="cart-items" class="mb-3"></div>
+        <p id="cart-quantity" class="fw-bold text-end">Всього товарів: 0</p>
+        <p id="cart-total" class="fw-bold text-end">Всього: 0₴</p>
+        <div class="text-end">
+          <button class="btn btn-danger" id="clear-cart">Очистити кошик</button>
+        </div>
+      </div>
+
+      <div class="auth-container">
+        <h2 class="text-center">Форма авторизації</h2>
+        <form id="auth-form">
+          <div class="mb-3">
+            <label for="full-name" class="form-label">Прізвище та Ім'я</label>
+            <input type="text" class="form-control" id="full-name" required />
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">E-mail</label>
+            <input type="email" class="form-control" id="email" required />
+          </div>
+          <div class="mb-3">
+            <label for="address" class="form-label">Адреса</label>
+            <input type="text" class="form-control" id="address" required />
+          </div>
+          <div class="mb-3 form-check">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              id="postal-service"
+            />
+            <label class="form-check-label" for="postal-service"
+              >Оформити послугу поштової доставки</label
+            >
+          </div>
+          <div class="mb-3">
+            <label for="payment-method" class="form-label">Спосіб оплати</label>
+            <select class="form-select" id="payment-method">
+              <option value="card">Банківська карта</option>
+              <option value="cash">Готівка при отриманні</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            Підтвердити замовлення
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const SCRIPT_URL =
+          "https://script.google.com/macros/s/AKfycbxutLaKrLXxl9ep4rHqmeXWIRtv67rFmZIYAAnCAYPkrzT6v0WweKJ7XbU-bYKbNFou/exec";
+
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const cartContainer = document.getElementById("cart-items");
+        const cartTotal = document.getElementById("cart-total");
+        const cartQuantity = document.getElementById("cart-quantity");
+
+        // --- Обновление корзины ---
+        function updateCart() {
+          cartContainer.innerHTML = "";
+          let total = 0;
+          let totalQuantity = 0;
+
+          if (cart.length === 0) {
+            cartContainer.innerHTML =
+              "<p class='text-center'>Ваш кошик порожній.</p>";
+          } else {
+            cart.forEach((item, index) => {
+              total += item.price * item.quantity;
+              totalQuantity += item.quantity;
+
+              cartContainer.innerHTML += `
+          <div class="card mb-3" data-index="${index}">
+            <div class="row g-0">
+              <div class="col-md-4">
+                <img src="${item.image}" class="img-fluid" alt="${item.name}">
+              </div>
+              <div class="col-md-8">
+                <div class="card-body">
+                  <h5 class="card-title">${item.name}</h5>
+                  <p class="card-text">Ціна: ${item.price}₴ x ${
+                item.quantity
+              }</p>
+                  <p class="card-text">Розмір: ${item.size || "—"}</p>
+
+                  <div class="d-flex align-items-center">
+                    <button class="btn btn-outline-secondary btn-sm me-2 decrease-qty" data-index="${index}">-</button>
+                    <span class="quantity-value">${item.quantity}</span>
+                    <button class="btn btn-outline-secondary btn-sm ms-2 increase-qty" data-index="${index}">+</button>
+                  </div>
+
+                  <button class="btn btn-danger btn-sm mt-2 remove-item" data-index="${index}">Видалити</button>
+                </div>
+              </div>
+            </div>
+          </div>`;
+            });
+          }
+
+          cartTotal.textContent = `Всього: ${total}₴`;
+          cartQuantity.textContent = `Всього товарів: ${totalQuantity}`;
+
+          updateCartIcon(totalQuantity);
+          bindCartActions();
+        }
+
+        // --- Обновление иконки корзины ---
+        function updateCartIcon(totalQuantity) {
+          const cartIcon = document.getElementById("cart-count");
+          if (cartIcon) {
+            cartIcon.textContent = totalQuantity;
+            cartIcon.classList.remove("bounce");
+            void cartIcon.offsetWidth;
+            cartIcon.classList.add("bounce");
+          }
+        }
+
+        // --- Привязка кнопок внутри корзины ---
+        function bindCartActions() {
+          document.querySelectorAll(".remove-item").forEach((btn) => {
+            btn.addEventListener("click", function () {
+              const index = this.dataset.index;
+              cart.splice(index, 1);
+              localStorage.setItem("cart", JSON.stringify(cart));
+              updateCart();
+            });
+          });
+
+          document.querySelectorAll(".increase-qty").forEach((btn) => {
+            btn.addEventListener("click", function () {
+              const index = this.dataset.index;
+              cart[index].quantity++;
+              localStorage.setItem("cart", JSON.stringify(cart));
+              updateCart();
+            });
+          });
+
+          document.querySelectorAll(".decrease-qty").forEach((btn) => {
+            btn.addEventListener("click", function () {
+              const index = this.dataset.index;
+              if (cart[index].quantity > 1) {
+                cart[index].quantity--;
+                localStorage.setItem("cart", JSON.stringify(cart));
+                updateCart();
+              }
+            });
+          });
+        }
+
+        // --- Очистка корзины ---
+        document
+          .getElementById("clear-cart")
+          .addEventListener("click", function () {
+            localStorage.removeItem("cart");
+            cart = [];
+            updateCart();
+          });
+
+        // --- Отправка формы авторизации ---
+        const authForm = document.getElementById("auth-form");
+        if (authForm) {
+          authForm.addEventListener("submit", function (ev) {
+            ev.preventDefault();
+
+            const formData = {
+              action: "client",
+              name: document.getElementById("full-name").value.trim(),
+              email: document.getElementById("email").value.trim(),
+              address: document.getElementById("address").value.trim(),
+              postalService: document.getElementById("postal-service").checked
+                ? "Так"
+                : "Ні",
+              paymentMethod: document.getElementById("payment-method").value,
+            };
+
+            fetch(
+              "https://script.google.com/macros/s/AKfycbzkYvVahinHqjQiLaATfWieJbDH-3LZtL0NCrqXX-hsg_toK_3VOCcw0nBhm5-G60Cb/exec",
+              {
+                method: "POST",
+                body: JSON.stringify(formData),
+              }
+            )
+              .then((r) => r.text())
+              .then((txt) => {
+                console.log("Server response:", txt);
+                if (txt.startsWith("CLIENT")) {
+                  alert("Дані збережено! Дякуємо.");
+                  authForm.reset();
+                } else {
+                  alert("Помилка: " + txt);
+                }
+              })
+              .catch((err) => {
+                console.error("Form send error:", err);
+                alert("Помилка відправки!");
+              });
+          });
+        }
+
+        // --- Отправка заказа в Orders ---
+        const confirmOrderBtn = document.createElement("button");
+        confirmOrderBtn.className = "btn btn-success mt-3";
+        confirmOrderBtn.textContent = "Підтвердити замовлення";
+        document.querySelector(".cart-container").appendChild(confirmOrderBtn);
+
+        confirmOrderBtn.addEventListener("click", function () {
+          if (cart.length === 0) {
+            alert("Кошик порожній!");
+            return;
+          }
+
+          cart.forEach((item) => {
+            const orderData = {
+              action: "order",
+              name: item.name,
+              price: item.price,
+              size: item.size,
+              quantity: item.quantity,
+              image: item.image,
+              phone: "—", // Можно взять с формы, если нужно
+              email: "—",
+            };
+
+            fetch(
+              "https://script.google.com/macros/s/AKfycbzkYvVahinHqjQiLaATfWieJbDH-3LZtL0NCrqXX-hsg_toK_3VOCcw0nBhm5-G60Cb/exec",
+              {
+                method: "POST",
+                body: JSON.stringify(orderData),
+              }
+            )
+              .then((r) => r.text())
+              .then((txt) => {
+                console.log("Order response:", txt);
+              })
+              .catch((err) => {
+                console.error("Order send error:", err);
+              });
+          });
+
+          alert("Замовлення відправлено!");
+          localStorage.removeItem("cart");
+          cart = [];
+          updateCart();
+        });
+
+        updateCart();
+      });
+    </script>
+  </body>
+</html>
