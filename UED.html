@@ -990,7 +990,7 @@ const stockByProduct = {
     <script>
         // Отправка данных в Google Таблицу
         function sendOrderToSheet(product) {
-            fetch("https://script.google.com/macros/s/AKfycbzr6GpT9VuUrxeNcafXK9B78s5Ob8VTuhvUaLfRSiqkdFj_x7mAcKF_Z7sLhrC11F6k/exec", {
+            fetch("https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(product)
@@ -1034,16 +1034,16 @@ const stockByProduct = {
 
                 const email = prompt("Введіть ваш email (необов'язково):");
 
-                // Порядок данных как в Google Таблице:
-                const product = {
-                    name: name,           // A
-                    price: price,         // B
-                    size: size,           // C
-                    quantity: quantity,   // D
-                    image: imageFullUrl,  // E - будет вставлена формула =IMAGE()
-                    phone: phone,         // F
-                    email: email || ""    // G
-                };
+// Порядок данных как в Google Таблице:
+const product = {
+    name: name,          // A - Название товара
+    image: imageFullUrl, // B - Изображение
+    price: price,        // C - Цена
+    size: size,          // D - Размер
+    quantity: quantity,  // E - Количество
+    email: email || "",  // F - E-mail
+    phone: phone,        // G - Телефон
+};
 
                 sendOrderToSheet(product);
             });
