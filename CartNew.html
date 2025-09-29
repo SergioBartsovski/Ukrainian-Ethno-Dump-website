@@ -268,11 +268,21 @@
               .then((r) => r.text())
               .then((txt) => {
                 console.log("Server response:", txt);
-                if (txt.includes("CLIENT_DATA_RECEIVED")) {
-                  alert("Дані збережено! Дякуємо.");
-                  authForm.reset();
-                } else {
-                  alert("Помилка: " + txt);
+                try {
+                  const response = JSON.parse(txt);
+                  if (response.status === "success") {
+                    alert("Дані збережено! Дякуємо.");
+                    authForm.reset();
+                  } else {
+                    alert("Помилка: " + response.message);
+                  }
+                } catch (e) {
+                  if (txt.includes("CLIENT_DATA_RECEIVED")) {
+                    alert("Дані збережено! Дякуємо.");
+                    authForm.reset();
+                  } else {
+                    alert("Помилка: " + txt);
+                  }
                 }
               })
               .catch((err) => {

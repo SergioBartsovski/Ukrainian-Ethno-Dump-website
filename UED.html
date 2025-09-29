@@ -591,7 +591,8 @@
     <!-- New cart with cicle-->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const buyButtons = document.querySelectorAll(".BuyClick");
+    // ИЗМЕНЕНО: теперь обрабатываем только кнопки AddToCart, а не BuyClick
+    const buyButtons = document.querySelectorAll(".AddToCart");
     const modal = document.getElementById("custom-modal");
     const continueBtn = document.getElementById("continue-shopping");
     const goToCartBtn = document.getElementById("go-to-cart");
@@ -636,13 +637,12 @@
       });
     });
 
-    // 👇 Актуальные данные по наличию размеров
-const stockByProduct = {
-  "Вишивка": { S: false, M: false, L: false, XL: true, XXL: false },
-  "Трикотажний джемпер": { S: false, M: false, L: false, XL: false, XXL: false },
-  "Вишивка Етно": { S: true, M: true, L: true, XL: false, XXL: true }
-};
-
+    // Актуальные данные по наличию размеров
+    const stockByProduct = {
+      "Вишивка": { S: false, M: false, L: false, XL: true, XXL: false },
+      "Трикотажний джемпер": { S: false, M: false, L: false, XL: false, XXL: false },
+      "Вишивка Етно": { S: true, M: true, L: true, XL: false, XXL: true }
+    };
 
     document.querySelectorAll(".card").forEach(card => {
       const nameElem = card.querySelector(".Feminine");
@@ -684,7 +684,6 @@ const stockByProduct = {
     });
   });
 </script>
-
 
 
 
@@ -987,69 +986,105 @@ const stockByProduct = {
         });
     </script>
 
-    <script>
-        // Отправка данных в Google Таблицу
-        function sendOrderToSheet(product) {
-            fetch("https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(product)
-            })
-                .then(async res => {
-                    const text = await res.text();
-                    console.log("Response status:", res.status);
-                    console.log("Response text:", text);
-
-                    if (!res.ok) throw new Error("HTTP error " + res.status);
-                    alert("Замовлення надіслано!");
-                })
-                .catch(err => {
-                    alert("Помилка надсилання замовлення!");
-                    console.error("Fetch error:", err);
-                });
-        }
-
-
-        // Обработка всех кнопок "Купити в один клік"
-        document.querySelectorAll(".BuyClick").forEach(button => {
-            button.addEventListener("click", () => {
-                const card = button.closest(".card");
-
-                const name = button.getAttribute("data-sb-product-name");
-                const price = button.getAttribute("data-sb-product-price");
-                const quantity = button.getAttribute("data-sb-product-quantity") || 1;
-                const imageFullUrl = button.getAttribute("data-sb-product-img");
-
-
-                const sizeSelect = card.querySelector(".size-select");
-                const size = sizeSelect.value;
-
-                if (!size || size === "Оберіть розмір") {
-                    alert("Будь ласка, оберіть розмір перед покупкою.");
-                    return;
-                }
-
-                const phone = prompt("Введіть ваш номер телефону:");
-                if (!phone) return;
-
-                const email = prompt("Введіть ваш email (необов'язково):");
-
-// Порядок данных как в Google Таблице:
-const product = {
-    name: name,          // A - Название товара
-    image: imageFullUrl, // B - Изображение
-    price: price,        // C - Цена
-    size: size,          // D - Размер
-    quantity: quantity,  // E - Количество
-    email: email || "",  // F - E-mail
-    phone: phone,        // G - Телефон
-};
-
-                sendOrderToSheet(product);
-            });
+<script>
+// Отправка данных в Google Таблицу
+function sendOrderToSheet(product) {
+    console.log("Отправляемые данные:", product);
+    
+    return fetch("https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        },
+        body: JSON.stringify(product)
+    })
+        .then(async res => {
+            const text = await res.text();
+            console.log("Response status:", res.status);
+            console.log("Response text:", text);
+            
+            if (!res.ok) throw new Error("HTTP error " + res.status);
+            
+            const result = JSON.parse(text);
+            if (result.status === "success") {
+                alert("Замовлення надіслано успішно!");
+            } else {
+                throw new Error(result.message || "Невідома помилка");
+            }
+        })
+        .catch(err => {
+            alert("Помилка надсилання замовлення: " + err.message);
+            console.error("Fetch error:", err);
+            throw err;
         });
-    </script>
+}
 
+// Обработка всех кнопок "Купити в один клік"
+document.querySelectorAll(".BuyClick").forEach(button => {
+    button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Проверяем, не заблокирована ли кнопка
+        if (button.disabled) return;
+        
+        // Блокируем кнопку на время обработки
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = "Обробка...";
+        
+        const card = button.closest(".card");
+        const name = button.getAttribute("data-sb-product-name");
+        const price = button.getAttribute("data-sb-product-price");
+        const quantity = parseInt(button.getAttribute("data-sb-product-quantity")) || 1;
+        const imageFullUrl = button.getAttribute("data-sb-product-img");
+        
+        const sizeSelect = card.querySelector(".size-select");
+        const size = sizeSelect ? sizeSelect.value : "";
+        
+        if (!size || size === "Оберіть розмір") {
+            alert("Будь ласка, оберіть розмір перед покупкою.");
+            // Разблокируем кнопку
+            button.disabled = false;
+            button.textContent = originalText;
+            return;
+        }
+        
+        const phone = prompt("Введіть ваш номер телефону:");
+        if (!phone || phone.trim() === "") {
+            alert("Номер телефону обов'язковий!");
+            // Разблокируем кнопку
+            button.disabled = false;
+            button.textContent = originalText;
+            return;
+        }
+        
+        const email = prompt("Введіть ваш email (необов'язково):") || "";
+        
+        // Формируем объект с данными (БЕЗ action)
+        const product = {
+            name: name || "Товар",
+            image: imageFullUrl || "",
+            price: price || "0",
+            size: size || "",
+            quantity: quantity,
+            email: email.trim(),
+            phone: phone.trim()
+            // НЕТ поля action - это прямой заказ
+        };
+        
+        console.log("Прямой заказ - данные для отправки:", product);
+        
+        // Отправляем запрос
+        sendOrderToSheet(product).finally(() => {
+            // Разблокируем кнопку после завершения
+            button.disabled = false;
+            button.textContent = originalText;
+        });
+    });
+});
+</script>
 
 
 
