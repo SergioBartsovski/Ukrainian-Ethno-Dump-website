@@ -591,18 +591,18 @@
     <!-- New cart with cicle-->
 <script>
     // =======================================================
-    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ ---
+    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ (ВЫНЕСЕНЫ ИЗ DOMContentLoaded) ---
     // =======================================================
     
-    // 2. Устойчивая функция для обновления иконки корзины
+    // Функция для обновления иконки корзины (СДЕЛАНА ГЛОБАЛЬНОЙ)
     function updateCartIcon() {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         let totalQuantity = 0;
         cart.forEach(item => { totalQuantity += item.quantity; });
 
+        // Убедитесь, что в вашем HTML есть элемент с id="cart-count"
         const cartIcon = document.getElementById("cart-count");
         
-        // Защита: Если элемента #cart-count нет, скрипт не падает
         if (cartIcon) {
             cartIcon.textContent = totalQuantity;
             // Код анимации
@@ -612,7 +612,7 @@
         }
     }
 
-    // 1. Функция для добавления/обновления товара в localStorage
+    // Функция для добавления/обновления товара (СДЕЛАНА ГЛОБАЛЬНОЙ)
     function addToCart(itemToAdd) {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
         const existingItemIndex = cart.findIndex(i => 
@@ -632,15 +632,15 @@
     // --------------------------------------------------------
 
     // Предполагается, что функция sendOrderToSheet() определена ГЛОБАЛЬНО
-
+    
     document.addEventListener("DOMContentLoaded", function () {
-        // Элементы DOM (если они у вас есть в HTML)
+        // Элементы DOM
         const buyButtons = document.querySelectorAll(".AddToCart");
         const modal = document.getElementById("custom-modal");
         const continueBtn = document.getElementById("continue-shopping");
         const goToCartBtn = document.getElementById("go-to-cart");
 
-        // Инициализация
+        // ИНИЦИАЛИЗАЦИЯ: Обновляем счетчик при загрузке страницы UED.html
         updateCartIcon(); 
 
         // Модальное окно
@@ -653,14 +653,19 @@
                 const card = button.closest(".card");
                 
                 // 1. Сбор данных
-                const productName = card.querySelector(".Feminine").textContent.trim();
-                const priceText = card.querySelector(".PriceEmbr").textContent.trim().replace('₴', '');
+                const productName = card.querySelector(".Feminine")?.textContent?.trim();
+                const priceText = card.querySelector(".PriceEmbr")?.textContent?.trim()?.replace('₴', '');
                 const productPrice = parseFloat(priceText);
-                const productImage = card.querySelector(".card-img-top").getAttribute("src");
+                const productImage = card.querySelector(".card-img-top")?.getAttribute("src");
                 
                 const sizeSelect = card.querySelector(".size-select");
-                const selectedSize = sizeSelect.value;
-                const selectedOption = sizeSelect.options[sizeSelect.selectedIndex];
+                const selectedSize = sizeSelect?.value;
+                const selectedOption = sizeSelect?.options[sizeSelect.selectedIndex];
+                
+                if (!productName || isNaN(productPrice)) {
+                     alert("Помилка зчитування даних товару.");
+                     return;
+                }
 
                 // 2. Проверка размера
                 if (!selectedSize || selectedSize === "Оберіть розмір" || selectedOption.disabled) {
@@ -709,7 +714,7 @@
                             alert("Помилка надсилання замовлення. Спробуйте пізніше.");
                         });
                 } else {
-                     alert("Замовлення на «" + productName + "» додано в кошик. Функція sendOrderToSheet не знайдена.");
+                     console.warn("Функція sendOrderToSheet не знайдена. Замовлення додано лише в кошик.");
                 }
                 
                 // 8. Показываем модальное окно 
