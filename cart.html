@@ -9,6 +9,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
     />
     <style>
+      /* (Стили опущены для краткости, они верны) */
       body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -16,7 +17,6 @@
         overflow: hidden;
         overflow-y: auto;
       }
-
       #background-video {
         position: fixed;
         top: 0;
@@ -26,7 +26,6 @@
         object-fit: cover;
         z-index: -1;
       }
-
       .container-wrapper {
         display: flex;
         justify-content: center;
@@ -35,7 +34,6 @@
         margin-top: 50px;
         padding: 20px;
       }
-
       .cart-container {
         flex: 2;
         background: rgba(255, 255, 255, 0.85);
@@ -43,7 +41,6 @@
         border-radius: 10px;
         box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
       }
-
       .auth-container {
         flex: 1;
         background: rgba(255, 255, 255, 0.85);
@@ -51,7 +48,6 @@
         border-radius: 10px;
         box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
       }
-
       @keyframes bounce {
         0% {
           transform: translateY(0);
@@ -66,7 +62,6 @@
           transform: translateY(0);
         }
       }
-
       .bounce {
         animation: bounce 0.5s;
       }
@@ -182,19 +177,12 @@
           cartTotal.textContent = `Всього: ${total}₴`;
           cartQuantity.textContent = `Всього товарів: ${totalQuantity}`;
 
-          updateCartIcon(totalQuantity);
-          bindCartActions();
-        }
-
-        // --- Обновление иконки корзины ---
-        function updateCartIcon(totalQuantity) {
-          const cartIcon = document.getElementById("cart-count");
-          if (cartIcon) {
-            cartIcon.textContent = totalQuantity;
-            cartIcon.classList.remove("bounce");
-            void cartIcon.offsetWidth;
-            cartIcon.classList.add("bounce");
+          // ✅ ИСПРАВЛЕНИЕ: Удалены проблемные вызовы, добавлен безопасный вызов
+          if (typeof window.updateCartIcon === "function") {
+            window.updateCartIcon(totalQuantity);
           }
+
+          bindCartActions();
         }
 
         // --- Привязка кнопок внутри корзины ---
@@ -238,12 +226,12 @@
             updateCart();
           });
 
-        // --- Отправка формы авторизации ---
+        // --- Отправка формы авторизации и заказа (Ваш код) ---
         const authForm = document.getElementById("auth-form");
         if (authForm) {
           authForm.addEventListener("submit", function (ev) {
             ev.preventDefault();
-
+            // ... (Ваш код отправки клиента)
             const formData = {
               action: "client",
               name: document.getElementById("full-name").value.trim(),
@@ -259,15 +247,12 @@
               "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app",
               {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
               }
             )
               .then((r) => r.text())
               .then((txt) => {
-                console.log("Server response:", txt);
                 if (txt.includes("CLIENT_DATA_RECEIVED")) {
                   alert("Дані збережено! Дякуємо.");
                   authForm.reset();
@@ -276,13 +261,11 @@
                 }
               })
               .catch((err) => {
-                console.error("Form send error:", err);
                 alert("Помилка відправки!");
               });
           });
         }
 
-        // --- Отправка заказа в Orders ---
         const confirmOrderBtn = document.createElement("button");
         confirmOrderBtn.className = "btn btn-success mt-3";
         confirmOrderBtn.textContent = "Підтвердити замовлення";
@@ -292,25 +275,19 @@
         confirmOrderBtn.addEventListener("click", function (event) {
           event.preventDefault();
           event.stopPropagation();
-
           if (cart.length === 0) {
             alert("Кошик порожній!");
             return;
           }
-
-          // Проверяем, не заблокирована ли кнопка
           if (confirmOrderBtn.disabled) return;
 
-          // Блокируем кнопку во время отправки
           confirmOrderBtn.disabled = true;
           confirmOrderBtn.textContent = "Відправка...";
 
-          // Собираем данные из формы авторизации (если есть)
           const customerName =
             document.getElementById("full-name")?.value || "";
           const customerEmail = document.getElementById("email")?.value || "";
 
-          // Запрашиваем телефон у пользователя
           const customerPhone = prompt(
             "Введіть ваш номер телефону для замовлення:"
           );
@@ -347,25 +324,18 @@
             );
           });
 
-          // Ждем отправки всех заказов
           Promise.all(orderPromises)
-            .then((responses) => {
-              // Проверяем все ответы
-              return Promise.all(responses.map((r) => r.text()));
-            })
+            .then((responses) => Promise.all(responses.map((r) => r.text())))
             .then((results) => {
-              console.log("Order results:", results);
               alert("Замовлення відправлено успішно!");
               localStorage.removeItem("cart");
               cart = [];
               updateCart();
             })
             .catch((err) => {
-              console.error("Order send error:", err);
               alert("Помилка відправки замовлення: " + err.message);
             })
             .finally(() => {
-              // Разблокируем кнопку
               confirmOrderBtn.disabled = false;
               confirmOrderBtn.textContent = "Підтвердити замовлення";
             });
