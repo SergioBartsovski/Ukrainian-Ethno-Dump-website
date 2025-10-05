@@ -591,30 +591,36 @@
     <!-- New cart with cicle-->
 <script>
     // =======================================================
-    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ (ВЫНЕСЕНЫ ИЗ DOMContentLoaded) ---
+    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ (Доступны на ВСЕХ страницах) ---
     // =======================================================
     
-    // Функция для обновления иконки корзины (СДЕЛАНА ГЛОБАЛЬНОЙ)
+    /**
+     * Обновляет число в красном кружочке иконки корзины.
+     * Элемент счетчика должен иметь id="cart-count".
+     */
     function updateCartIcon() {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         let totalQuantity = 0;
-        cart.forEach(item => { totalQuantity += item.quantity; });
+        cart.forEach(item => { totalQuantity += item.quantity || 0; });
 
-        // Убедитесь, что в вашем HTML есть элемент с id="cart-count"
         const cartIcon = document.getElementById("cart-count");
         
         if (cartIcon) {
             cartIcon.textContent = totalQuantity;
-            // Код анимации
+            // Анимация
             cartIcon.classList.remove("bounce");
             void cartIcon.offsetWidth; 
             cartIcon.classList.add("bounce");
         }
     }
 
-    // Функция для добавления/обновления товара (СДЕЛАНА ГЛОБАЛЬНОЙ)
+    /**
+     * Добавляет или обновляет товар в корзине в localStorage.
+     */
     function addToCart(itemToAdd) {
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        
+        // Поиск товара по названию И размеру
         const existingItemIndex = cart.findIndex(i => 
             i.name === itemToAdd.name && i.size === itemToAdd.size
         );
@@ -622,6 +628,7 @@
         if (existingItemIndex > -1) {
             cart[existingItemIndex].quantity += 1;
         } else {
+            itemToAdd.quantity = itemToAdd.quantity || 1; 
             cart.push(itemToAdd);
         }
 
@@ -629,25 +636,25 @@
         updateCartIcon();
     }
     
-    // --------------------------------------------------------
-
-    // Предполагается, что функция sendOrderToSheet() определена ГЛОБАЛЬНО
+    // =======================================================
+    // --- ОСНОВНАЯ ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ ---
+    // =======================================================
     
     document.addEventListener("DOMContentLoaded", function () {
-        // Элементы DOM
-        const buyButtons = document.querySelectorAll(".AddToCart");
+        // ИНИЦИАЛИЗАЦИЯ: Обновляем счетчик при загрузке страницы
+        updateCartIcon(); 
+        
+        // !!! Используем ваш оригинальный класс .BuyClick
+        const buyButtons = document.querySelectorAll(".BuyClick");
+        
         const modal = document.getElementById("custom-modal");
         const continueBtn = document.getElementById("continue-shopping");
         const goToCartBtn = document.getElementById("go-to-cart");
 
-        // ИНИЦИАЛИЗАЦИЯ: Обновляем счетчик при загрузке страницы UED.html
-        updateCartIcon(); 
-
-        // Модальное окно
         if (continueBtn) continueBtn.addEventListener("click", () => { modal.style.display = "none"; });
         if (goToCartBtn) goToCartBtn.addEventListener("click", () => { window.location.href = "cart.html"; });
 
-        // --- ОБРАБОТЧИК КНОПКИ "Купити в один клік" ---
+        // --- ОБРАБОТЧИК КНОПКИ "Купити в один клік" (.BuyClick) ---
         buyButtons.forEach(button => {
             button.addEventListener("click", function () {
                 const card = button.closest(".card");
@@ -659,16 +666,16 @@
                 const productImage = card.querySelector(".card-img-top")?.getAttribute("src");
                 
                 const sizeSelect = card.querySelector(".size-select");
-                const selectedSize = sizeSelect?.value;
+                const selectedSize = sizeSelect?.value || 'N/A';
                 const selectedOption = sizeSelect?.options[sizeSelect.selectedIndex];
                 
                 if (!productName || isNaN(productPrice)) {
-                     alert("Помилка зчитування даних товару.");
-                     return;
+                    alert("Помилка зчитування даних товару.");
+                    return;
                 }
 
                 // 2. Проверка размера
-                if (!selectedSize || selectedSize === "Оберіть розмір" || selectedOption.disabled) {
+                if (sizeSelect && (!selectedSize || selectedSize === "Оберіть розмір" || selectedOption.disabled)) {
                     alert("Будь ласка, оберіть доступний розмір перед покупкою!");
                     return;
                 }
@@ -677,45 +684,52 @@
                 const email = prompt("Введіть ваш Email:");
                 const phone = prompt("Введіть ваш телефон:");
 
-                // 🛑 КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Прерываем скрипт, если пользователь нажал Отмена (email или phone будут null/пустыми)
                 if (!email || !phone) {
                     alert("Для прямого замовлення необхідні Email та телефон.");
                     return; 
                 }
                 
-                // 4. Формирование объекта товара
+                // 4. Формирование объекта товара для КОРЗИНЫ
                 const itemData = {
                     name: productName,
                     price: productPrice,
                     image: productImage,
                     size: selectedSize,
-                    quantity: 1,
+                    quantity: 1, 
                 };
                 
-                // 5. ДОБАВЛЕНИЕ ТОВАРА В КОРЗИНУ 
+                // 5. ДОБАВЛЕНИЕ ТОВАРА В КОРЗИНУ (localStorage)
                 addToCart(itemData); 
                 
-                // 6. Формирование данных для CRM
+                // 6. Формирование данных для CRM (Order)
                 const productForCRM = {
-                    ...itemData,
-                    email: email,
-                    phone: phone 
+                    action: "order",
+                    name: productName,
+                    price: productPrice,
+                    size: selectedSize,
+                    quantity: 1,
+                    image: productImage,
+                    phone: phone.trim(),
+                    email: email.trim(),
                 };
-
-                // 7. Отправка прямого заказа
-                if (typeof sendOrderToSheet === 'function') {
-                    sendOrderToSheet(productForCRM)
-                        .then(() => {
-                            alert(`Замовлення на «${productName}» успішно надіслано!`);
-                            // ОЧИСТКА КОРЗИНЫ УБРАНА!
-                        })
-                        .catch(err => {
-                            console.error("Помилка надсилання замовлення:", err);
-                            alert("Помилка надсилання замовлення. Спробуйте пізніше.");
-                        });
-                } else {
-                     console.warn("Функція sendOrderToSheet не знайдена. Замовлення додано лише в кошик.");
-                }
+                
+                // 7. Отправка прямого заказа через прокси
+                fetch(
+                    "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app",
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(productForCRM),
+                    }
+                )
+                .then((r) => r.text())
+                .then((txt) => {
+                    alert(`Замовлення на «${productName}» успішно надіслано!`);
+                })
+                .catch(err => {
+                    console.error("Помилка надсилання замовлення:", err);
+                    alert("Помилка надсилання замовлення. Спробуйте пізніше.");
+                });
                 
                 // 8. Показываем модальное окно 
                 if (modal) modal.style.display = "block";
@@ -766,10 +780,9 @@
                 stockElem.style.color = "red";
             }
         });
-        // --------------------------------------------------------------------
+        // --- КОНЕЦ КОДА ПО ПРОВЕРКЕ НАЛИЧИЯ РАЗМЕРОВ ---
     });
 </script>
-
 
 
 
