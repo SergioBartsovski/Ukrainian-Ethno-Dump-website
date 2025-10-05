@@ -591,8 +591,13 @@
     <!-- New cart with cicle-->
 <script>
     // =======================================================
-    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ (Оставлены для счетчика) ---
+    // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ КОРЗИНЫ (Доступны на ВСЕХ страницах) ---
     // =======================================================
+    
+    /**
+     * Обновляет число в красном кружочке иконки корзины.
+     * Элемент счетчика должен иметь id="cart-count".
+     */
     function updateCartIcon() {
         const cart = JSON.parse(localStorage.getItem("cart")) || [];
         let totalQuantity = 0;
@@ -602,22 +607,46 @@
         
         if (cartIcon) {
             cartIcon.textContent = totalQuantity;
+            // Анимация
             cartIcon.classList.remove("bounce");
             void cartIcon.offsetWidth; 
             cartIcon.classList.add("bounce");
         }
     }
-    // Функция addToCart() удалена, так как не используется кнопкой "Купити в один клік"
+
+    /**
+     * Добавляет или обновляет товар в корзине в localStorage.
+     */
+    function addToCart(itemToAdd) {
+        let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        
+        // Поиск товара по названию И размеру
+        const existingItemIndex = cart.findIndex(i => 
+            i.name === itemToAdd.name && i.size === itemToAdd.size
+        );
+
+        if (existingItemIndex > -1) {
+            cart[existingItemIndex].quantity += 1;
+        } else {
+            itemToAdd.quantity = itemToAdd.quantity || 1; 
+            cart.push(itemToAdd);
+        }
+
+        localStorage.setItem("cart", JSON.stringify(cart));
+        updateCartIcon();
+    }
     
     // =======================================================
     // --- ОСНОВНАЯ ЛОГИКА ГЛАВНОЙ СТРАНИЦЫ ---
     // =======================================================
     
     document.addEventListener("DOMContentLoaded", function () {
-        const PROXY_URL = "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app";
+        // ИНИЦИАЛИЗАЦИЯ: Обновляем счетчик при загрузке страницы
         updateCartIcon(); 
         
+        // !!! Используем ваш оригинальный класс .BuyClick
         const buyButtons = document.querySelectorAll(".BuyClick");
+        
         const modal = document.getElementById("custom-modal");
         const continueBtn = document.getElementById("continue-shopping");
         const goToCartBtn = document.getElementById("go-to-cart");
@@ -625,12 +654,12 @@
         if (continueBtn) continueBtn.addEventListener("click", () => { modal.style.display = "none"; });
         if (goToCartBtn) goToCartBtn.addEventListener("click", () => { window.location.href = "cart.html"; });
 
-        // --- ЛОГИКА "КУПИТИ В ОДИН КЛІК": ОДИН ЗАПРОС КОНТАКТОВ + ОТПРАВКА В CRM (LIST #1) ---
+        // --- ОБРАБОТЧИК КНОПКИ "Купити в один клік" (.BuyClick) ---
         buyButtons.forEach(button => {
             button.addEventListener("click", function () {
                 const card = button.closest(".card");
                 
-                // 1. Сбор данных о товаре
+                // 1. Сбор данных
                 const productName = card.querySelector(".Feminine")?.textContent?.trim();
                 const priceText = card.querySelector(".PriceEmbr")?.textContent?.trim()?.replace('₴', '');
                 const productPrice = parseFloat(priceText);
@@ -651,18 +680,30 @@
                     return;
                 }
                 
-                // 3. Запрос контактов (ОДИН РАЗ)
-                const phone = prompt("Введіть ваш телефон:");
+                // 3. Запрос контактов
                 const email = prompt("Введіть ваш Email:");
+                const phone = prompt("Введіть ваш телефон:");
 
                 if (!email || !phone) {
                     alert("Для прямого замовлення необхідні Email та телефон.");
                     return; 
                 }
                 
-                // 4. Формирование данных для CRM (action: "order" -> List #1)
-                const orderData = {
-                    action: "order", // Предполагается, что "order" идет в List #1
+                // 4. Формирование объекта товара для КОРЗИНЫ
+                const itemData = {
+                    name: productName,
+                    price: productPrice,
+                    image: productImage,
+                    size: selectedSize,
+                    quantity: 1, 
+                };
+                
+                // 5. ДОБАВЛЕНИЕ ТОВАРА В КОРЗИНУ (localStorage)
+                addToCart(itemData); 
+                
+                // 6. Формирование данных для CRM (Order)
+                const productForCRM = {
+                    action: "order",
                     name: productName,
                     price: productPrice,
                     size: selectedSize,
@@ -672,12 +713,13 @@
                     email: email.trim(),
                 };
                 
-                // 5. Отправка прямого заказа через прокси
-                fetch(PROXY_URL,
+                // 7. Отправка прямого заказа через прокси
+                fetch(
+                    "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app",
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(orderData),
+                        body: JSON.stringify(productForCRM),
                     }
                 )
                 .then((r) => r.text())
@@ -689,14 +731,56 @@
                     alert("Помилка надсилання замовлення. Спробуйте пізніше.");
                 });
                 
-                // 6. Показываем модальное окно 
+                // 8. Показываем модальное окно 
                 if (modal) modal.style.display = "block";
             });
         });
 
-        // --- ВАШ КОД ПО ПРОВЕРКЕ НАЛИЧИЯ РАЗМЕРОВ (БЕЗ ИЗМЕНЕНИЙ) ---
-        const stockByProduct = { /* ... */ };
-        document.querySelectorAll(".card").forEach(card => { /* ... */ });
+        // --- ВАШ СУЩЕСТВУЮЩИЙ КОД ПО ПРОВЕРКЕ НАЛИЧИЯ РАЗМЕРОВ ---
+        const stockByProduct = {
+            "Вишивка": { S: false, M: false, L: false, XL: true, XXL: false },
+            "Трикотажний джемпер": { S: false, M: false, L: false, XL: false, XXL: false },
+            "Вишивка Етно": { S: true, M: true, L: true, XL: false, XXL: true }
+        };
+
+        document.querySelectorAll(".card").forEach(card => {
+            const nameElem = card.querySelector(".Feminine");
+            const selectElem = card.querySelector(".size-select");
+            const stockElem = card.querySelector(".stock-status");
+
+            if (!nameElem || !selectElem || !stockElem) return;
+
+            const productName = nameElem.textContent.trim();
+            const sizes = stockByProduct[productName];
+            if (!sizes) return;
+
+            selectElem.innerHTML = '<option selected disabled>Оберіть розмір</option>';
+            let hasAvailableSize = false;
+
+            Object.entries(sizes).forEach(([size, inStock]) => {
+                const opt = document.createElement("option");
+                opt.value = size;
+                opt.textContent = inStock ? size : `${size} ❌ Немає в наявності`;
+                opt.disabled = !inStock;
+
+                if (!inStock) {
+                    opt.classList.add("text-muted");
+                } else {
+                    hasAvailableSize = true;
+                }
+
+                selectElem.appendChild(opt);
+            });
+
+            if (hasAvailableSize) {
+                stockElem.textContent = "✔️ В наявності";
+                stockElem.style.color = "green";
+            } else {
+                stockElem.textContent = "❌ Немає в наявності";
+                stockElem.style.color = "red";
+            }
+        });
+        // --- КОНЕЦ КОДА ПО ПРОВЕРКЕ НАЛИЧИЯ РАЗМЕРОВ ---
     });
 </script>
 
