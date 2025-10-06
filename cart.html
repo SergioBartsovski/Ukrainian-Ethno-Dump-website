@@ -163,6 +163,34 @@
           "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app";
 
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+        // --- ДОБАВЛЕННАЯ ПРОВЕРКА И ОЧИСТКА ПОВРЕЖДЕННЫХ ДАННЫХ (для решения проблемы с невидимыми товарами) ---
+        const cleanCart = cart.filter((item) => {
+          // Проверяем, что цена и количество - это валидные числа больше нуля
+          const itemPrice = parseFloat(item.price);
+          const itemQuantity = parseInt(item.quantity);
+
+          // Фильтруем элементы, где цена/количество невалидны или равны нулю
+          return (
+            !isNaN(itemPrice) &&
+            itemPrice > 0 &&
+            !isNaN(itemQuantity) &&
+            itemQuantity > 0
+          );
+        });
+
+        // Если корзина была изменена (были удалены плохие элементы)
+        if (cleanCart.length !== cart.length) {
+          console.log(
+            `Очищено невалидных элементов: ${
+              cart.length - cleanCart.length
+            }. Пожалуйста, добавьте товары снова.`
+          );
+          cart = cleanCart;
+          localStorage.setItem("cart", JSON.stringify(cart));
+        }
+        // --- КОНЕЦ ПРОВЕРКИ ---
+
         const cartContainer = document.getElementById("cart-items");
         const cartTotal = document.getElementById("cart-total");
         const cartQuantity = document.getElementById("cart-quantity");
@@ -173,18 +201,27 @@
           let total = 0;
           let totalQuantity = 0;
 
+          const submitButton = document
+            .getElementById("auth-form")
+            ?.querySelector('button[type="submit"]');
+
           if (cart.length === 0) {
             cartContainer.innerHTML =
               "<p class='text-center'>Ваш кошик порожній.</p>";
-            // Отключаем кнопку формы, если корзина пуста
-            document.getElementById("auth-form")?.querySelector('button[type="submit"]').disabled = true;
+            // Отключаем кнопку отправки, если корзина пуста
+            if (submitButton) submitButton.disabled = true;
           } else {
-            document.getElementById("auth-form")?.querySelector('button[type="submit"]').disabled = false;
+            // Включаем кнопку отправки
+            if (submitButton) submitButton.disabled = false;
+
             cart.forEach((item, index) => {
+              // Используем уже очищенные/валидные данные
               const itemPrice = parseFloat(item.price) || 0;
               const itemQuantity = parseInt(item.quantity) || 0;
 
-              if (!itemPrice || !itemQuantity) return; // Пропустить неполный товар
+              // Эта проверка нужна, если пользователь меняет количество до 0,
+              // но в нашем случае она уже смягчена фильтром выше
+              if (!itemPrice || !itemQuantity) return;
 
               total += itemPrice * itemQuantity;
               totalQuantity += itemQuantity;
@@ -198,7 +235,9 @@
                 <div class="col-md-8">
                   <div class="card-body">
                     <h5 class="card-title">${item.name}</h5>
-                    <p class="card-text">Ціна: ${item.price}₴ x ${item.quantity}</p>
+                    <p class="card-text">Ціна: ${item.price}₴ x ${
+                item.quantity
+              }</p>
                     <p class="card-text">Розмір: ${item.size || "—"}</p>
 
                     <div class="d-flex align-items-center">
@@ -215,16 +254,14 @@
             });
           }
 
-          cartTotal.textContent = `Всього: ${total}₴`;
+          cartTotal.textContent = `Всього: ${total.toFixed(2)}₴`; // Используем toFixed для правильного отображения
           cartQuantity.textContent = `Всього товарів: ${totalQuantity}`;
 
-          // Вызываем глобальную функцию для обновления счетчика на иконке
           updateCartIcon();
-
           bindCartActions();
         }
 
-        // --- Привязка кнопок внутри корзины ---
+        // --- Привязка кнопок внутри корзины (остается без изменений) ---
         function bindCartActions() {
           document.querySelectorAll(".remove-item").forEach((btn) => {
             btn.addEventListener("click", function () {
@@ -281,16 +318,19 @@
             // 1. Сбор данных клиента
             const fullName = document.getElementById("full-name").value.trim();
             const customerEmail = document.getElementById("email").value.trim();
-            // Используем новое поле "phone"
             const customerPhone = document.getElementById("phone").value.trim();
             const address = document.getElementById("address").value.trim();
-            const postalService = document.getElementById("postal-service").checked
+            const postalService = document.getElementById("postal-service")
+              .checked
               ? "Так"
               : "Ні";
-            const paymentMethod = document.getElementById("payment-method").value;
+            const paymentMethod =
+              document.getElementById("payment-method").value;
 
             // Отключаем кнопку на время отправки
-            const submitButton = authForm.querySelector('button[type="submit"]');
+            const submitButton = authForm.querySelector(
+              'button[type="submit"]'
+            );
             submitButton.disabled = true;
             submitButton.textContent = "Відправка...";
 
@@ -320,8 +360,8 @@
                 size: item.size,
                 quantity: item.quantity,
                 image: item.image,
-                phone: customerPhone, // Используем телефон из формы
-                email: customerEmail, // Используем email из формы
+                phone: customerPhone,
+                email: customerEmail,
               };
               return fetch(PROXY_URL, {
                 method: "POST",
@@ -335,28 +375,20 @@
 
             // 4. Ожидание завершения всех запросов
             Promise.all([clientPromise, ...orderPromises])
-              .then((responses) =>
-                Promise.all(responses.map((r) => r.text()))
-              )
+              .then((responses) => Promise.all(responses.map((r) => r.text())))
               .then((results) => {
-                // Предполагаем, что результаты в порядке отправки: 1 клиент, затем N заказов
-                const clientResult = results[0];
-                const orderResults = results.slice(1);
-
-                // Для простоты проверим, что все запросы ответили
-                const allSuccess = results.every(r => r.includes("RECEIVED")); // Вам нужно убедиться, что ваш прокси возвращает что-то вроде "CLIENT_DATA_RECEIVED" и "ORDER_DATA_RECEIVED"
+                // Предполагаем, что ваш прокси возвращает что-то, что включает "RECEIVED"
+                const allSuccess = results.every((r) => r.includes("RECEIVED"));
 
                 if (allSuccess) {
                   alert("Замовлення успішно оформлено! Дякуємо.");
                   localStorage.removeItem("cart");
                   cart = [];
-                  updateCart(); // Очистить интерфейс и счетчик
+                  updateCart();
                   authForm.reset();
                 } else {
                   console.error("Partial failure:", results);
-                  alert(
-                    "Помилка: Не всі дані були збережені. Перевірте CRM."
-                  );
+                  alert("Помилка: Не всі дані були збережені. Перевірте CRM.");
                 }
               })
               .catch((err) => {
@@ -369,8 +401,6 @@
               });
           });
         }
-
-        // --- УДАЛЕНА ЛОГИКА ОТДЕЛЬНОЙ КНОПКИ 'confirm-order-btn' ---
 
         // Инициализация
         updateCart();
