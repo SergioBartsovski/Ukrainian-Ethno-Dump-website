@@ -91,11 +91,15 @@
       </div>
 
       <div class="auth-container">
-        <h2 class="text-center">Форма авторизації</h2>
+        <h2 class="text-center">Форма замовлення</h2>
         <form id="auth-form">
           <div class="mb-3">
             <label for="full-name" class="form-label">Прізвище та Ім'я</label>
             <input type="text" class="form-control" id="full-name" required />
+          </div>
+          <div class="mb-3">
+            <label for="phone" class="form-label">Телефон</label>
+            <input type="tel" class="form-control" id="phone" required />
           </div>
           <div class="mb-3">
             <label for="email" class="form-label">E-mail</label>
@@ -172,7 +176,10 @@
           if (cart.length === 0) {
             cartContainer.innerHTML =
               "<p class='text-center'>Ваш кошик порожній.</p>";
+            // Отключаем кнопку формы, если корзина пуста
+            document.getElementById("auth-form")?.querySelector('button[type="submit"]').disabled = true;
           } else {
+            document.getElementById("auth-form")?.querySelector('button[type="submit"]').disabled = false;
             cart.forEach((item, index) => {
               const itemPrice = parseFloat(item.price) || 0;
               const itemQuantity = parseInt(item.quantity) || 0;
@@ -183,28 +190,28 @@
               totalQuantity += itemQuantity;
 
               cartContainer.innerHTML += `
-        <div class="card mb-3" data-index="${index}">
-          <div class="row g-0">
-            <div class="col-md-4">
-              <img src="${item.image}" class="img-fluid" alt="${item.name}">
-            </div>
-            <div class="col-md-8">
-              <div class="card-body">
-                <h5 class="card-title">${item.name}</h5>
-                <p class="card-text">Ціна: ${item.price}₴ x ${item.quantity}</p>
-                <p class="card-text">Розмір: ${item.size || "—"}</p>
-
-                <div class="d-flex align-items-center">
-                  <button class="btn btn-outline-secondary btn-sm me-2 decrease-qty" data-index="${index}">-</button>
-                  <span class="quantity-value">${item.quantity}</span>
-                  <button class="btn btn-outline-secondary btn-sm ms-2 increase-qty" data-index="${index}">+</button>
+            <div class="card mb-3" data-index="${index}">
+              <div class="row g-0">
+                <div class="col-md-4">
+                  <img src="${item.image}" class="img-fluid" alt="${item.name}">
                 </div>
+                <div class="col-md-8">
+                  <div class="card-body">
+                    <h5 class="card-title">${item.name}</h5>
+                    <p class="card-text">Ціна: ${item.price}₴ x ${item.quantity}</p>
+                    <p class="card-text">Розмір: ${item.size || "—"}</p>
 
-                <button class="btn btn-danger btn-sm mt-2 remove-item" data-index="${index}">Видалити</button>
+                    <div class="d-flex align-items-center">
+                      <button class="btn btn-outline-secondary btn-sm me-2 decrease-qty" data-index="${index}">-</button>
+                      <span class="quantity-value">${item.quantity}</span>
+                      <button class="btn btn-outline-secondary btn-sm ms-2 increase-qty" data-index="${index}">+</button>
+                    </div>
+
+                    <button class="btn btn-danger btn-sm mt-2 remove-item" data-index="${index}">Видалити</button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>`;
+            </div>`;
             });
           }
 
@@ -258,112 +265,112 @@
             updateCart();
           });
 
-        // --- Отправка формы авторизации (Клиент) ---
+        // --- ОБЪЕДИНЕННАЯ ЛОГИКА: Отправка формы (Клиент + Товары) ---
         const authForm = document.getElementById("auth-form");
         if (authForm) {
           authForm.addEventListener("submit", function (ev) {
             ev.preventDefault();
-            const formData = {
+
+            if (cart.length === 0) {
+              alert(
+                "Кошик порожній! Додайте товари, перш ніж оформлювати замовлення."
+              );
+              return;
+            }
+
+            // 1. Сбор данных клиента
+            const fullName = document.getElementById("full-name").value.trim();
+            const customerEmail = document.getElementById("email").value.trim();
+            // Используем новое поле "phone"
+            const customerPhone = document.getElementById("phone").value.trim();
+            const address = document.getElementById("address").value.trim();
+            const postalService = document.getElementById("postal-service").checked
+              ? "Так"
+              : "Ні";
+            const paymentMethod = document.getElementById("payment-method").value;
+
+            // Отключаем кнопку на время отправки
+            const submitButton = authForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = "Відправка...";
+
+            // 2. Отправка данных клиента (Clients Sheet)
+            const clientData = {
               action: "client",
-              name: document.getElementById("full-name").value.trim(),
-              email: document.getElementById("email").value.trim(),
-              address: document.getElementById("address").value.trim(),
-              postalService: document.getElementById("postal-service").checked
-                ? "Так"
-                : "Ні",
-              paymentMethod: document.getElementById("payment-method").value,
+              name: fullName,
+              email: customerEmail,
+              phone: customerPhone,
+              address: address,
+              postalService: postalService,
+              paymentMethod: paymentMethod,
             };
 
-            fetch(PROXY_URL, {
+            const clientPromise = fetch(PROXY_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(formData),
-            })
-              .then((r) => r.text())
-              .then((txt) => {
-                if (txt.includes("CLIENT_DATA_RECEIVED")) {
-                  alert("Дані збережено! Дякуємо.");
+              body: JSON.stringify(clientData),
+            });
+
+            // 3. Отправка каждого товара как отдельного заказа (Orders Sheet)
+            let orderPromises = cart.map((item) => {
+              const orderData = {
+                action: "order",
+                name: item.name,
+                price: item.price,
+                size: item.size,
+                quantity: item.quantity,
+                image: item.image,
+                phone: customerPhone, // Используем телефон из формы
+                email: customerEmail, // Используем email из формы
+              };
+              return fetch(PROXY_URL, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+                body: JSON.stringify(orderData),
+              });
+            });
+
+            // 4. Ожидание завершения всех запросов
+            Promise.all([clientPromise, ...orderPromises])
+              .then((responses) =>
+                Promise.all(responses.map((r) => r.text()))
+              )
+              .then((results) => {
+                // Предполагаем, что результаты в порядке отправки: 1 клиент, затем N заказов
+                const clientResult = results[0];
+                const orderResults = results.slice(1);
+
+                // Для простоты проверим, что все запросы ответили
+                const allSuccess = results.every(r => r.includes("RECEIVED")); // Вам нужно убедиться, что ваш прокси возвращает что-то вроде "CLIENT_DATA_RECEIVED" и "ORDER_DATA_RECEIVED"
+
+                if (allSuccess) {
+                  alert("Замовлення успішно оформлено! Дякуємо.");
+                  localStorage.removeItem("cart");
+                  cart = [];
+                  updateCart(); // Очистить интерфейс и счетчик
                   authForm.reset();
                 } else {
-                  alert("Помилка: " + txt);
+                  console.error("Partial failure:", results);
+                  alert(
+                    "Помилка: Не всі дані були збережені. Перевірте CRM."
+                  );
                 }
               })
               .catch((err) => {
-                alert("Помилка відправки даних клієнта!");
+                console.error("Full failure:", err);
+                alert("Помилка відправки замовлення. Спробуйте пізніше!");
+              })
+              .finally(() => {
+                submitButton.disabled = false;
+                submitButton.textContent = "Підтвердити замовлення";
               });
           });
         }
 
-        // --- Отправка заказа (Товары) ---
-        const confirmOrderBtn = document.createElement("button");
-        confirmOrderBtn.className = "btn btn-success mt-3";
-        confirmOrderBtn.textContent = "Підтвердити замовлення";
-        confirmOrderBtn.id = "confirm-order-btn";
-        document.querySelector(".cart-container").appendChild(confirmOrderBtn);
-
-        confirmOrderBtn.addEventListener("click", function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          if (cart.length === 0) {
-            alert("Кошик порожній!");
-            return;
-          }
-          if (confirmOrderBtn.disabled) return;
-
-          confirmOrderBtn.disabled = true;
-          confirmOrderBtn.textContent = "Відправка...";
-
-          const customerEmail = document.getElementById("email")?.value || "";
-
-          const customerPhone = prompt(
-            "Введіть ваш номер телефону для замовлення:"
-          );
-
-          if (!customerPhone || customerPhone.trim() === "") {
-            alert("Номер телефону обов'язковий для оформлення замовлення!");
-            confirmOrderBtn.disabled = false;
-            confirmOrderBtn.textContent = "Підтвердити замовлення";
-            return;
-          }
-
-          let orderPromises = cart.map((item) => {
-            const orderData = {
-              action: "order",
-              name: item.name,
-              price: item.price,
-              size: item.size,
-              quantity: item.quantity,
-              image: item.image,
-              phone: customerPhone.trim(),
-              email: customerEmail.trim(),
-            };
-
-            return fetch(PROXY_URL, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-              },
-              body: JSON.stringify(orderData),
-            });
-          });
-
-          Promise.all(orderPromises)
-            .then((responses) => Promise.all(responses.map((r) => r.text())))
-            .then((results) => {
-              alert("Замовлення відправлено успішно!");
-              localStorage.removeItem("cart");
-              cart = [];
-              updateCart(); // Очистить интерфейс и счетчик
-            })
-            .catch((err) => {
-              alert("Помилка відправки замовлення: " + err.message);
-            })
-            .finally(() => {
-              confirmOrderBtn.disabled = false;
-              confirmOrderBtn.textContent = "Підтвердити замовлення";
-            });
-        });
+        // --- УДАЛЕНА ЛОГИКА ОТДЕЛЬНОЙ КНОПКИ 'confirm-order-btn' ---
 
         // Инициализация
         updateCart();

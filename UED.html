@@ -644,7 +644,6 @@
         // ИНИЦИАЛИЗАЦИЯ: Обновляем счетчик при загрузке страницы
         updateCartIcon(); 
         
-        // !!! Используем ваш оригинальный класс .BuyClick
         const buyButtons = document.querySelectorAll(".BuyClick");
         
         const modal = document.getElementById("custom-modal");
@@ -680,16 +679,10 @@
                     return;
                 }
                 
-                // 3. Запрос контактов
-                const email = prompt("Введіть ваш Email:");
-                const phone = prompt("Введіть ваш телефон:");
-
-                if (!email || !phone) {
-                    alert("Для прямого замовлення необхідні Email та телефон.");
-                    return; 
-                }
+                // --- ВАЖНОЕ ИЗМЕНЕНИЕ: УДАЛЕНИЕ ПРОМПТОВ И ПРЯМОЙ ОТПРАВКИ ЗАКАЗА ---
+                // Кнопка теперь ТОЛЬКО добавляет товар в корзину (localStorage)
                 
-                // 4. Формирование объекта товара для КОРЗИНЫ
+                // 3. Формирование объекта товара для КОРЗИНЫ
                 const itemData = {
                     name: productName,
                     price: productPrice,
@@ -698,40 +691,10 @@
                     quantity: 1, 
                 };
                 
-                // 5. ДОБАВЛЕНИЕ ТОВАРА В КОРЗИНУ (localStorage)
+                // 4. ДОБАВЛЕНИЕ ТОВАРА В КОРЗИНУ (localStorage)
                 addToCart(itemData); 
                 
-                // 6. Формирование данных для CRM (Order)
-                const productForCRM = {
-                    action: "order",
-                    name: productName,
-                    price: productPrice,
-                    size: selectedSize,
-                    quantity: 1,
-                    image: productImage,
-                    phone: phone.trim(),
-                    email: email.trim(),
-                };
-                
-                // 7. Отправка прямого заказа через прокси
-                fetch(
-                    "https://ukrethnodumpcrm-proxy-v2-877954628151.europe-central2.run.app",
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(productForCRM),
-                    }
-                )
-                .then((r) => r.text())
-                .then((txt) => {
-                    alert(`Замовлення на «${productName}» успішно надіслано!`);
-                })
-                .catch(err => {
-                    console.error("Помилка надсилання замовлення:", err);
-                    alert("Помилка надсилання замовлення. Спробуйте пізніше.");
-                });
-                
-                // 8. Показываем модальное окно 
+                // 5. Показываем модальное окно 
                 if (modal) modal.style.display = "block";
             });
         });
